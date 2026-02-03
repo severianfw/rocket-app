@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -19,12 +20,16 @@ import com.astro.rocketapp.severian.ui.screen.RocketDetailScreen
 import com.astro.rocketapp.severian.ui.screen.RocketListScreen
 import com.astro.rocketapp.severian.ui.viewmodel.RocketViewModel
 import com.astro.rocketapp.severian.ui.theme.RocketAppTheme
+import com.astro.rocketapp.severian.ui.viewmodel.RocketViewModelFactory
 
 class MainActivity : ComponentActivity() {
+
+    private val viewModel: RocketViewModel by viewModels<RocketViewModel> {
+        RocketViewModelFactory(AppModule.getRocketsUseCase)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val viewModel = RocketViewModel(AppModule.getRocketsUseCase)
 
         enableEdgeToEdge()
         setContent {
