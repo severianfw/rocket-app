@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,9 +40,9 @@ fun RocketListScreen(
     RocketListContent(
         state = state,
         searchQuery = searchQuery,
-        onSearchQueryChange = remember(viewModel) { { viewModel.onSearchQueryChange(it) } },
+        onSearchQueryChange = viewModel::onSearchQueryChange,
         onRocketClick = onRocketClick,
-        onRetry = remember(viewModel) { { viewModel.getRockets() } },
+        onRetry = viewModel::getRockets,
         modifier = modifier
     )
 }
