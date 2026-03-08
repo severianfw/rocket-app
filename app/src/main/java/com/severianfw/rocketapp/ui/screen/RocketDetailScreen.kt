@@ -1,5 +1,10 @@
 package com.severianfw.rocketapp.ui.screen
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,11 +40,13 @@ import com.severianfw.rocketapp.util.formatToUSD
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun RocketDetailScreen(
     rocketId: String,
     viewModel: RocketViewModel,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onBackClick: () -> Unit
 ) {
     val rocket = viewModel.getRocketById(rocketId)
@@ -47,7 +54,21 @@ fun RocketDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = rocket?.name ?: "Detail") },
+                title = {
+                    if (rocket != null) {
+                        with(sharedTransitionScope) {
+                            Text(
+                                text = rocket.name,
+                                modifier = Modifier.sharedElement(
+                                    state = rememberSharedContentState(key = "name/${rocket.id}"),
+                                    animatedVisibilityScope = animatedVisibilityScope
+                                )
+                            )
+                        }
+                    } else {
+                        Text(text = "Detail")
+                    }
+                },
                 windowInsets = WindowInsets(0, 0, 0, 0),
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
@@ -70,6 +91,8 @@ fun RocketDetailScreen(
         if (rocket != null) {
             RocketDetailContent(
                 rocket = rocket,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
                 modifier = Modifier.padding(innerPadding)
             )
         } else {
@@ -85,10 +108,12 @@ fun RocketDetailScreen(
     }
 }
 
-@OptIn(ExperimentalGlideComposeApi::class)
+@OptIn(ExperimentalGlideComposeApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun RocketDetailContent(
     rocket: Rocket,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -96,25 +121,25 @@ fun RocketDetailContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        GlideImage(
-            model = rocket.image,
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp),
-            contentScale = ContentScale.Crop
-        )
+        with(sharedTransitionScope) {
+            GlideImage(
+                model = rocket.image,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+                    .sharedElement(
+                        state = rememberSharedContentState(key = "image/${rocket.id}"),
+                        animatedVisibilityScope = animatedVisibilityScope
+                    ),
+                contentScale = ContentScale.Crop
+            )
+        }
 
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = rocket.name,
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.tertiary
-            )
-
             InfoSection(label = "Description", value = rocket.description)
             InfoSection(label = "Cost per Launch", value = rocket.costPerLaunch.formatToUSD())
             InfoSection(label = "Country", value = rocket.country)
@@ -140,22 +165,29 @@ fun InfoSection(label: String, value: String) {
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Preview(showBackground = true)
 @Composable
 fun RocketDetailContentPreview() {
     RocketAppTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
-            RocketDetailContent(
-                rocket = Rocket(
-                    id = "1",
-                    name = "Falcon 9",
-                    description = "Falcon 9 is a reusable, two-stage rocket designed and manufactured by SpaceX for the reliable and safe transport of people and payloads into Earth orbit and beyond. Falcon 9 is the world’s first orbital class reusable rocket.",
-                    costPerLaunch = 62000000,
-                    country = "United States",
-                    firstFlight = "2010-06-04",
-                    image = ""
-                )
-            )
+            SharedTransitionLayout {
+                AnimatedVisibility(visible = true) {
+                    RocketDetailContent(
+                        rocket = Rocket(
+                            id = "1",
+                            name = "Falcon 9",
+                            description = "Falcon 9 is a reusable, two-stage rocket designed and manufactured by SpaceX for the reliable and safe transport of people and payloads into Earth orbit and beyond. Falcon 9 is the world’s first orbital class reusable rocket.",
+                            costPerLaunch = 62000000,
+                            country = "United States",
+                            firstFlight = "2010-06-04",
+                            image = ""
+                        ),
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedVisibilityScope = this@AnimatedVisibility
+                    )
+                }
+            }
         }
     }
 }
