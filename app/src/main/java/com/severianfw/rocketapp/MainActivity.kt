@@ -5,6 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -18,8 +20,8 @@ import androidx.navigation.navArgument
 import com.severianfw.rocketapp.di.AppModule
 import com.severianfw.rocketapp.ui.screen.RocketDetailScreen
 import com.severianfw.rocketapp.ui.screen.RocketListScreen
-import com.severianfw.rocketapp.ui.viewmodel.RocketViewModel
 import com.severianfw.rocketapp.ui.theme.RocketAppTheme
+import com.severianfw.rocketapp.ui.viewmodel.RocketViewModel
 import com.severianfw.rocketapp.ui.viewmodel.RocketViewModelFactory
 
 class MainActivity : ComponentActivity() {
@@ -45,6 +47,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun RocketAppNavHost(
     viewModel: RocketViewModel,
@@ -52,31 +55,36 @@ fun RocketAppNavHost(
 ) {
     val navController = rememberNavController()
 
-    NavHost(
-        navController = navController,
-        startDestination = "rocket_list",
-        modifier = modifier
-    ) {
-        composable("rocket_list") {
-            RocketListScreen(
-                viewModel = viewModel,
-                onRocketClick = { rocketId ->
-                    navController.navigate("rocket_detail/$rocketId")
-                }
-            )
-        }
-        composable(
-            route = "rocket_detail/{rocketId}",
-            arguments = listOf(navArgument("rocketId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val rocketId = backStackEntry.arguments?.getString("rocketId") ?: ""
-            RocketDetailScreen(
-                rocketId = rocketId,
-                viewModel = viewModel,
-                onBackClick = {
-                    navController.navigateUp()
-                }
-            )
+    SharedTransitionLayout(modifier = modifier) {
+        NavHost(
+            navController = navController,
+            startDestination = "rocket_list"
+        ) {
+            composable("rocket_list") {
+                RocketListScreen(
+                    viewModel = viewModel,
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this@composable,
+                    onRocketClick = { rocketId ->
+                        navController.navigate("rocket_detail/$rocketId")
+                    }
+                )
+            }
+            composable(
+                route = "rocket_detail/{rocketId}",
+                arguments = listOf(navArgument("rocketId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val rocketId = backStackEntry.arguments?.getString("rocketId") ?: ""
+                RocketDetailScreen(
+                    rocketId = rocketId,
+                    viewModel = viewModel,
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this@composable,
+                    onBackClick = {
+                        navController.navigateUp()
+                    }
+                )
+            }
         }
     }
 }

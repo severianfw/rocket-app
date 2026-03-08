@@ -1,5 +1,10 @@
 package com.severianfw.rocketapp.ui.screen
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -28,9 +33,12 @@ import com.severianfw.rocketapp.ui.theme.RocketAppTheme
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun RocketListScreen(
     viewModel: RocketViewModel,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onRocketClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -40,6 +48,8 @@ fun RocketListScreen(
     RocketListContent(
         state = state,
         searchQuery = searchQuery,
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope,
         onSearchQueryChange = viewModel::onSearchQueryChange,
         onRocketClick = onRocketClick,
         onRetry = viewModel::getRockets,
@@ -47,10 +57,13 @@ fun RocketListScreen(
     )
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun RocketListContent(
     state: RocketUiState,
     searchQuery: String,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onSearchQueryChange: (String) -> Unit,
     onRocketClick: (String) -> Unit,
     onRetry: () -> Unit,
@@ -120,6 +133,8 @@ fun RocketListContent(
                             ) { rocket ->
                                 RocketItem(
                                     rocket = rocket,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope,
                                     onClick = { onRocketClick(rocket.id) }
                                 )
                             }
@@ -151,118 +166,154 @@ fun RocketListContent(
     }
 }
 
-@OptIn(ExperimentalGlideComposeApi::class)
+@OptIn(ExperimentalGlideComposeApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun RocketItem(
     rocket: Rocket,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.background,
-            contentColor = MaterialTheme.colorScheme.tertiary,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary)
-    ) {
-        Row(
-            modifier = Modifier.padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+    with(sharedTransitionScope) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.tertiary,
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary)
         ) {
-            GlideImage(
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                model = rocket.image,
-                contentScale = ContentScale.Crop,
-                contentDescription = null
-            )
-            Column(modifier = Modifier.weight(1F)) {
-                Text(text = rocket.name, style = MaterialTheme.typography.titleLarge)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = rocket.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+            Row(
+                modifier = Modifier.padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                GlideImage(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .sharedElement(
+                            state = rememberSharedContentState(key = "image/${rocket.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope
+                        ),
+                    model = rocket.image,
+                    contentScale = ContentScale.Crop,
+                    contentDescription = null
+                )
+                Column(modifier = Modifier.weight(1F)) {
+                    Text(
+                        text = rocket.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.sharedElement(
+                            state = rememberSharedContentState(key = "name/${rocket.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = rocket.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null
                 )
             }
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null
-            )
         }
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Preview(showBackground = true)
 @Composable
 fun RocketListContentSuccessPreview() {
     RocketAppTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
-            RocketListContent(
-                state = RocketUiState.Success(
-                    rockets = listOf(
-                        Rocket(
-                            "1",
-                            "Falcon 1",
-                            "The first orbital rocket built by SpaceX.",
-                            800000,
-                            "",
-                            "",
-                            ""
+            SharedTransitionLayout {
+                AnimatedVisibility(visible = true) {
+                    RocketListContent(
+                        state = RocketUiState.Success(
+                            rockets = listOf(
+                                Rocket(
+                                    "1",
+                                    "Falcon 1",
+                                    "The first orbital rocket built by SpaceX.",
+                                    800000,
+                                    "",
+                                    "",
+                                    ""
+                                ),
+                                Rocket(
+                                    "2",
+                                    "Falcon 9",
+                                    "A reusable, two-stage rocket designed and manufactured by SpaceX.",
+                                    800000,
+                                    "",
+                                    "",
+                                    ""
+                                ),
+                            )
                         ),
-                        Rocket(
-                            "2",
-                            "Falcon 9",
-                            "A reusable, two-stage rocket designed and manufactured by SpaceX.",
-                            800000,
-                            "",
-                            "",
-                            ""
-                        ),
+                        searchQuery = "",
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedVisibilityScope = this@AnimatedVisibility,
+                        onSearchQueryChange = {},
+                        onRocketClick = {},
+                        onRetry = {}
                     )
-                ),
-                searchQuery = "",
-                onSearchQueryChange = {},
-                onRocketClick = {},
-                onRetry = {}
-            )
+                }
+            }
         }
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Preview(showBackground = true)
 @Composable
 fun RocketListContentLoadingPreview() {
     RocketAppTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
-            RocketListContent(
-                state = RocketUiState.Loading,
-                searchQuery = "",
-                onSearchQueryChange = {},
-                onRocketClick = {},
-                onRetry = {}
-            )
+            SharedTransitionLayout {
+                AnimatedVisibility(visible = true) {
+                    RocketListContent(
+                        state = RocketUiState.Loading,
+                        searchQuery = "",
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedVisibilityScope = this@AnimatedVisibility,
+                        onSearchQueryChange = {},
+                        onRocketClick = {},
+                        onRetry = {}
+                    )
+                }
+            }
         }
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Preview(showBackground = true)
 @Composable
 fun RocketListContentErrorPreview() {
     RocketAppTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
-            RocketListContent(
-                state = RocketUiState.Error("An unexpected error occurred"),
-                searchQuery = "",
-                onSearchQueryChange = {},
-                onRocketClick = {},
-                onRetry = {}
-            )
+            SharedTransitionLayout {
+                AnimatedVisibility(visible = true) {
+                    RocketListContent(
+                        state = RocketUiState.Error("An unexpected error occurred"),
+                        searchQuery = "",
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedVisibilityScope = this@AnimatedVisibility,
+                        onSearchQueryChange = {},
+                        onRocketClick = {},
+                        onRetry = {}
+                    )
+                }
+            }
         }
     }
 }
