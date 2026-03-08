@@ -57,4 +57,5 @@ Key concepts:
 
 ## 📸 Screenshots
 
-![List - Detail](https://github.com/user-attachments/assets/edf932d9-ba23-48d4-a3cd-190af85400e7)
+![list - detail](https://github.com/user-attachments/assets/4089b7ff-c34a-4995-bf9e-e1933b91dc4d)
+
