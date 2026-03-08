@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.astro.rocketapp.severian"
+    namespace = "com.severianfw.rocketapp"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.astro.rocketapp.severian"
+        applicationId = "com.severianfw.rocketapp"
         minSdk = 21
         targetSdk = 36
         versionCode = 1
