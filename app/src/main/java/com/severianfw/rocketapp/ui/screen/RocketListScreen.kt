@@ -26,12 +26,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.severianfw.rocketapp.domain.model.Rocket
+import com.severianfw.rocketapp.R
 import com.severianfw.rocketapp.ui.state.RocketUiState
 import com.severianfw.rocketapp.ui.viewmodel.RocketViewModel
 import com.severianfw.rocketapp.ui.theme.RocketAppTheme
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.integration.compose.placeholder
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -39,7 +41,7 @@ fun RocketListScreen(
     viewModel: RocketViewModel,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onRocketClick: (String) -> Unit,
+    onRocketClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
@@ -65,7 +67,7 @@ fun RocketListContent(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onSearchQueryChange: (String) -> Unit,
-    onRocketClick: (String) -> Unit,
+    onRocketClick: (Int) -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -174,6 +176,8 @@ fun RocketItem(
     animatedVisibilityScope: AnimatedVisibilityScope,
     onClick: () -> Unit
 ) {
+    val imageModel = rocket.image.ifBlank { R.drawable.rocket_list_placeholder }
+
     with(sharedTransitionScope) {
         Card(
             modifier = Modifier
@@ -198,7 +202,9 @@ fun RocketItem(
                             state = rememberSharedContentState(key = "image/${rocket.id}"),
                             animatedVisibilityScope = animatedVisibilityScope
                         ),
-                    model = rocket.image,
+                    model = imageModel,
+                    loading = placeholder(R.drawable.rocket_list_placeholder),
+                    failure = placeholder(R.drawable.rocket_list_placeholder),
                     contentScale = ContentScale.Crop,
                     contentDescription = null
                 )
@@ -213,7 +219,7 @@ fun RocketItem(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = rocket.description,
+                        text = rocket.fullName,
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
@@ -240,19 +246,19 @@ fun RocketListContentSuccessPreview() {
                         state = RocketUiState.Success(
                             rockets = listOf(
                                 Rocket(
-                                    "1",
+                                    1,
                                     "Falcon 1",
                                     "The first orbital rocket built by SpaceX.",
-                                    800000,
+                                    "",
                                     "",
                                     "",
                                     ""
                                 ),
                                 Rocket(
-                                    "2",
+                                    2,
                                     "Falcon 9",
                                     "A reusable, two-stage rocket designed and manufactured by SpaceX.",
-                                    800000,
+                                    "",
                                     "",
                                     "",
                                     ""

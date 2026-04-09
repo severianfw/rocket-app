@@ -48,7 +48,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 class MainActivity : ComponentActivity() {
 
     private val viewModel: RocketViewModel by viewModels<RocketViewModel> {
-        RocketViewModelFactory(AppModule.getRocketsUseCase)
+        RocketViewModelFactory(AppModule.getRocketsUseCase, AppModule.getRocketDetailUseCase)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -142,9 +142,9 @@ fun RocketAppNavHost(
             }
             composable(
                 route = "rocket_detail/{rocketId}",
-                arguments = listOf(navArgument("rocketId") { type = NavType.StringType })
+                arguments = listOf(navArgument("rocketId") { type = NavType.IntType })
             ) { backStackEntry ->
-                val rocketId = backStackEntry.arguments?.getString("rocketId") ?: ""
+                val rocketId = backStackEntry.arguments?.getInt("rocketId") ?: 0
                 RocketDetailScreen(
                     rocketId = rocketId,
                     viewModel = viewModel,

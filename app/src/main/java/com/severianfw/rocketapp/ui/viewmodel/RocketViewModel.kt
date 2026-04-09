@@ -3,7 +3,9 @@ package com.severianfw.rocketapp.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.severianfw.rocketapp.domain.model.Rocket
+import com.severianfw.rocketapp.domain.usecase.GetRocketDetailUseCase
 import com.severianfw.rocketapp.domain.usecase.GetRocketsUseCase
+import com.severianfw.rocketapp.ui.state.RocketDetailUiState
 import com.severianfw.rocketapp.ui.state.RocketUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +18,8 @@ import retrofit2.HttpException
 import java.io.IOException
 
 class RocketViewModel(
-    private val getRocketsUseCase: GetRocketsUseCase
+    private val getRocketsUseCase: GetRocketsUseCase,
+    private val getRocketDetailUseCase: GetRocketDetailUseCase
 ) : ViewModel() {
 
     private val _rawState = MutableStateFlow<RocketUiState>(RocketUiState.Loading)
@@ -26,6 +29,9 @@ class RocketViewModel(
 
     private val _state = MutableStateFlow<RocketUiState>(RocketUiState.Loading)
     val state: StateFlow<RocketUiState> = _state.asStateFlow()
+
+    private val _detailState = MutableStateFlow<RocketDetailUiState>(RocketDetailUiState.Loading)
+    val detailState: StateFlow<RocketDetailUiState> = _detailState.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -49,12 +55,37 @@ class RocketViewModel(
         _searchQuery.value = newQuery
     }
 
-    fun getRocketById(id: String): Rocket? {
+    fun getRocketById(id: Int): Rocket? {
         val currentState = _rawState.value
         return if (currentState is RocketUiState.Success) {
             currentState.rockets.find { it.id == id }
         } else {
             null
+        }
+    }
+
+    fun getRocketDetail(id: Int) {
+        viewModelScope.launch {
+            getRocketDetailUseCase(id)
+                .onStart {
+                    _detailState.value = RocketDetailUiState.Loading
+                }
+                .catch { e ->
+                    val errorMessage = when (e) {
+                        is IOException -> "Network error: Please check your internet connection"
+                        is HttpException -> {
+                            when (e.code()) {
+                                404 -> "Resource not found"
+                                else -> "Network error: ${e.code()}"
+                            }
+                        }
+                        else -> e.message ?: "An unexpected error occurred"
+                    }
+                    _detailState.value = RocketDetailUiState.Error(errorMessage)
+                }
+                .collect { rocket ->
+                    _detailState.value = RocketDetailUiState.Success(rocket)
+                }
         }
     }
 

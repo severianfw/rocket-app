@@ -18,6 +18,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,45 +30,55 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.severianfw.rocketapp.domain.model.Rocket
-import com.severianfw.rocketapp.ui.theme.RocketAppTheme
-import com.severianfw.rocketapp.ui.viewmodel.RocketViewModel
-import com.severianfw.rocketapp.util.formatToUSD
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.severianfw.rocketapp.domain.model.Rocket
+import com.severianfw.rocketapp.ui.state.RocketDetailUiState
+import com.severianfw.rocketapp.ui.theme.RocketAppTheme
+import com.severianfw.rocketapp.ui.viewmodel.RocketViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun RocketDetailScreen(
-    rocketId: String,
+    rocketId: Int,
     viewModel: RocketViewModel,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onBackClick: () -> Unit
 ) {
-    val rocket = viewModel.getRocketById(rocketId)
+    val cachedRocket = viewModel.getRocketById(rocketId)
+    val detailState by viewModel.detailState.collectAsState()
+
+    LaunchedEffect(rocketId) {
+        viewModel.getRocketDetail(rocketId)
+    }
+
+    val displayName = (detailState as? RocketDetailUiState.Success)?.rocket?.name
+        ?: cachedRocket?.name ?: "Detail"
+    val displayImage = (detailState as? RocketDetailUiState.Success)?.rocket?.image
+        ?: cachedRocket?.image ?: ""
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    if (rocket != null) {
-                        with(sharedTransitionScope) {
-                            Text(
-                                text = rocket.name,
-                                modifier = Modifier.sharedElement(
-                                    state = rememberSharedContentState(key = "name/${rocket.id}"),
-                                    animatedVisibilityScope = animatedVisibilityScope
-                                )
+                    with(sharedTransitionScope) {
+                        Text(
+                            text = displayName,
+                            modifier = Modifier.sharedElement(
+                                state = rememberSharedContentState(key = "name/$rocketId"),
+                                animatedVisibilityScope = animatedVisibilityScope
                             )
-                        }
-                    } else {
-                        Text(text = "Detail")
+                        )
                     }
                 },
                 windowInsets = WindowInsets(0, 0, 0, 0),
@@ -88,21 +100,51 @@ fun RocketDetailScreen(
             )
         }
     ) { innerPadding ->
-        if (rocket != null) {
-            RocketDetailContent(
-                rocket = rocket,
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
+            RocketDetailImage(
+                imageUrl = displayImage,
+                rocketId = rocketId,
                 sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
-                modifier = Modifier.padding(innerPadding)
+                animatedVisibilityScope = animatedVisibilityScope
             )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "Rocket not found")
+
+            when (detailState) {
+                is RocketDetailUiState.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+
+                is RocketDetailUiState.Success -> {
+                    RocketDetailInfo(
+                        rocket = (detailState as RocketDetailUiState.Success).rocket,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = 300.dp)
+                    )
+                }
+
+                is RocketDetailUiState.Error -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 300.dp)
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = (detailState as RocketDetailUiState.Error).message,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center
+                        )
+                        Button(onClick = { viewModel.getRocketDetail(rocketId) }) {
+                            Text("Retry")
+                        }
+                    }
+                }
             }
         }
     }
@@ -110,41 +152,48 @@ fun RocketDetailScreen(
 
 @OptIn(ExperimentalGlideComposeApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
-fun RocketDetailContent(
-    rocket: Rocket,
+fun RocketDetailImage(
+    imageUrl: String,
+    rocketId: Int,
     sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
+) {
+    with(sharedTransitionScope) {
+        GlideImage(
+            model = imageUrl,
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .sharedElement(
+                    state = rememberSharedContentState(key = "image/$rocketId"),
+                    animatedVisibilityScope = animatedVisibilityScope
+                ),
+            contentScale = ContentScale.Crop
+        )
+    }
+}
+
+@Composable
+fun RocketDetailInfo(
+    rocket: Rocket,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
-            .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        with(sharedTransitionScope) {
-            GlideImage(
-                model = rocket.image,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
-                    .sharedElement(
-                        state = rememberSharedContentState(key = "image/${rocket.id}"),
-                        animatedVisibilityScope = animatedVisibilityScope
-                    ),
-                contentScale = ContentScale.Crop
-            )
-        }
-
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        if (rocket.description.isNotBlank()) {
             InfoSection(label = "Description", value = rocket.description)
-            InfoSection(label = "Cost per Launch", value = rocket.costPerLaunch.formatToUSD())
-            InfoSection(label = "Country", value = rocket.country)
-            InfoSection(label = "First Flight", value = rocket.firstFlight)
         }
+        if (rocket.launchCost.isNotBlank()) {
+            InfoSection(label = "Launch Cost", value = rocket.launchCost)
+        }
+        InfoSection(label = "Successful Launches", value = rocket.successLaunches.toString())
+        InfoSection(label = "Successful Landings", value = rocket.successLandings.toString())
+        InfoSection(label = "Failed Landings", value = rocket.failedLandings.toString())
     }
 }
 
@@ -168,23 +217,25 @@ fun InfoSection(label: String, value: String) {
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Preview(showBackground = true)
 @Composable
-fun RocketDetailContentPreview() {
+fun RocketDetailInfoPreview() {
     RocketAppTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
             SharedTransitionLayout {
                 AnimatedVisibility(visible = true) {
-                    RocketDetailContent(
+                    RocketDetailInfo(
                         rocket = Rocket(
-                            id = "1",
+                            id = 1,
                             name = "Falcon 9",
-                            description = "Falcon 9 is a reusable, two-stage rocket designed and manufactured by SpaceX for the reliable and safe transport of people and payloads into Earth orbit and beyond. Falcon 9 is the world’s first orbital class reusable rocket.",
-                            costPerLaunch = 62000000,
-                            country = "United States",
-                            firstFlight = "2010-06-04",
-                            image = ""
-                        ),
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedVisibilityScope = this@AnimatedVisibility
+                            fullName = "Falcon 9 Block 5",
+                            family = "Falcon",
+                            variant = "Block 5",
+                            image = "",
+                            description = "Falcon 9 is a reusable, two-stage rocket designed and manufactured by SpaceX.",
+                            launchCost = "$62,000,000",
+                            successLaunches = 200,
+                            successLandings = 180,
+                            failedLandings = 2
+                        )
                     )
                 }
             }
