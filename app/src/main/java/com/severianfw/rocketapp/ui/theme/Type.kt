@@ -49,5 +49,9 @@ val Typography = Typography(
     labelLarge = TextStyle(
         fontFamily = LexendBold,
         fontSize = 20.sp,
+    ),
+    labelSmall = TextStyle(
+        fontFamily = LexendRegular,
+        fontSize = 12.sp,
     )
 )

@@ -7,3 +7,9 @@ sealed class RocketUiState {
     data class Success(val rockets: List<Rocket>) : RocketUiState()
     data class Error(val message: String) : RocketUiState()
 }
+
+sealed class RocketDetailUiState {
+    data object Loading : RocketDetailUiState()
+    data class Success(val rocket: Rocket) : RocketDetailUiState()
+    data class Error(val message: String) : RocketDetailUiState()
+}
