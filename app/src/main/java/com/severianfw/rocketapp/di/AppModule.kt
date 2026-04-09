@@ -2,6 +2,7 @@ package com.severianfw.rocketapp.di
 
 import com.severianfw.rocketapp.data.repository.RocketRepositoryImpl
 import com.severianfw.rocketapp.domain.repository.RocketRepository
+import com.severianfw.rocketapp.domain.usecase.GetRocketDetailUseCase
 import com.severianfw.rocketapp.domain.usecase.GetRocketsUseCase
 
 object AppModule {
@@ -12,5 +13,9 @@ object AppModule {
 
     val getRocketsUseCase: GetRocketsUseCase by lazy {
         GetRocketsUseCase(rocketRepository)
+    }
+
+    val getRocketDetailUseCase: GetRocketDetailUseCase by lazy {
+        GetRocketDetailUseCase(rocketRepository)
     }
 }

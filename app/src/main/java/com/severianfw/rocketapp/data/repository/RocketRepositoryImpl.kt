@@ -12,7 +12,12 @@ class RocketRepositoryImpl(
 ) : RocketRepository {
 
     override fun getRockets(): Flow<List<Rocket>> = flow {
-        val response = apiService.getRockets()
-        emit(response.map { it.toRocketModel() })
+        val results = apiService.getRockets().results ?: emptyList()
+        emit(results.map { it.toRocketModel() })
+    }
+
+    override fun getRocketDetail(id: Int): Flow<Rocket> = flow {
+        val response = apiService.getRocketDetail(id)
+        emit(response.toRocketModel())
     }
 }
