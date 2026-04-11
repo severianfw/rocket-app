@@ -8,10 +8,10 @@ This project was built as a **learning and portfolio project** to explore **Mode
 
 ## ✨ Features
 
-- 🚀 Rocket list and detail
+- 🚀 SpaceX Rocket list and detail
 - 🎬 Shared Element transition between screens
-- ⏳ Live countdown to the next rocket launch (in progress)
-- 🌐 Data from SpaceX public API
+- ⏳ Live countdown to the next SpaceX rocket launch
+- 🌐 Data from thespacedevs LL2 API (https://thespacedevs.com/llapi)
 
 ---
 
@@ -42,7 +42,6 @@ Key concepts:
 - **Coroutines & Flow**
 - **Retrofit**
 - **Coil**
-- **SpaceX API**
 
 ---
 
@@ -57,5 +56,6 @@ Key concepts:
 
 ## 📸 Screenshots
 
-![list - detail](https://github.com/user-attachments/assets/4089b7ff-c34a-4995-bf9e-e1933b91dc4d)
+![RocketApp 2 0](https://github.com/user-attachments/assets/6d426893-e5c8-499b-8142-3939f60ebd28)
+
 
