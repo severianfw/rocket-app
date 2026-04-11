@@ -1,8 +1,10 @@
 package com.severianfw.rocketapp.util
 
+import com.severianfw.rocketapp.data.remote.ResultsItem
 import com.severianfw.rocketapp.data.remote.RocketDetailResponse
 import com.severianfw.rocketapp.data.remote.RocketListResultItem
 import com.severianfw.rocketapp.domain.model.Rocket
+import com.severianfw.rocketapp.domain.model.RocketLaunch
 import java.text.NumberFormat
 
 fun RocketListResultItem.toRocketModel(): Rocket {
@@ -29,6 +31,19 @@ fun RocketDetailResponse.toRocketModel(): Rocket {
         successLaunches = successfulLaunches ?: 0,
         successLandings = successfulLandings ?: 0,
         failedLandings = failedLandings ?: 0
+    )
+}
+
+fun ResultsItem.toRocketLaunchModel(): RocketLaunch {
+    return RocketLaunch(
+        id = id ?: "",
+        net = net ?: "",
+        image = image ?: "",
+        rocketName = rocket?.configuration?.fullName ?: rocket?.configuration?.name ?: "",
+        missionName = mission?.name ?: "",
+        missionType = mission?.type ?: "",
+        orbitName = mission?.orbit?.name ?: "",
+        statusName = status?.name ?: ""
     )
 }
 

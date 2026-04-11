@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.severianfw.rocketapp.domain.model.Rocket
 import com.severianfw.rocketapp.domain.usecase.GetRocketDetailUseCase
 import com.severianfw.rocketapp.domain.usecase.GetRocketsUseCase
+import com.severianfw.rocketapp.domain.usecase.GetUpcomingLaunchesUseCase
 import com.severianfw.rocketapp.ui.state.RocketDetailUiState
+import com.severianfw.rocketapp.ui.state.RocketLaunchUiState
 import com.severianfw.rocketapp.ui.state.RocketUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,11 +21,12 @@ import java.io.IOException
 
 class RocketViewModel(
     private val getRocketsUseCase: GetRocketsUseCase,
-    private val getRocketDetailUseCase: GetRocketDetailUseCase
+    private val getRocketDetailUseCase: GetRocketDetailUseCase,
+    private val getUpcomingLaunchesUseCase: GetUpcomingLaunchesUseCase
 ) : ViewModel() {
 
     private val _rawState = MutableStateFlow<RocketUiState>(RocketUiState.Loading)
-    
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
@@ -32,6 +35,9 @@ class RocketViewModel(
 
     private val _detailState = MutableStateFlow<RocketDetailUiState>(RocketDetailUiState.Loading)
     val detailState: StateFlow<RocketDetailUiState> = _detailState.asStateFlow()
+
+    private val _launchState = MutableStateFlow<RocketLaunchUiState>(RocketLaunchUiState.Loading)
+    val launchState: StateFlow<RocketLaunchUiState> = _launchState.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -47,8 +53,9 @@ class RocketViewModel(
                 _state.value = filteredState
             }
         }
-        
+
         getRockets()
+        getUpcomingLaunches()
     }
 
     fun onSearchQueryChange(newQuery: String) {
@@ -110,6 +117,31 @@ class RocketViewModel(
                 }
                 .collect { rockets ->
                     _rawState.value = RocketUiState.Success(rockets)
+                }
+        }
+    }
+
+    fun getUpcomingLaunches() {
+        viewModelScope.launch {
+            getUpcomingLaunchesUseCase()
+                .onStart {
+                    _launchState.value = RocketLaunchUiState.Loading
+                }
+                .catch { e ->
+                    val errorMessage = when (e) {
+                        is IOException -> "Network error: Please check your internet connection"
+                        is HttpException -> {
+                            when (e.code()) {
+                                404 -> "Resource not found"
+                                else -> "Network error: ${e.code()}"
+                            }
+                        }
+                        else -> e.message ?: "An unexpected error occurred"
+                    }
+                    _launchState.value = RocketLaunchUiState.Error(errorMessage)
+                }
+                .collect { launches ->
+                    _launchState.value = RocketLaunchUiState.Success(launches)
                 }
         }
     }

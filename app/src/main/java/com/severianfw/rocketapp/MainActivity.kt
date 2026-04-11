@@ -48,7 +48,11 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 class MainActivity : ComponentActivity() {
 
     private val viewModel: RocketViewModel by viewModels<RocketViewModel> {
-        RocketViewModelFactory(AppModule.getRocketsUseCase, AppModule.getRocketDetailUseCase)
+        RocketViewModelFactory(
+            AppModule.getRocketsUseCase,
+            AppModule.getRocketDetailUseCase,
+            AppModule.getUpcomingLaunchesUseCase
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -138,7 +142,7 @@ fun RocketAppNavHost(
                 )
             }
             composable(Screen.RocketLaunch.route) {
-                RocketLaunchScreen()
+                RocketLaunchScreen(viewModel = viewModel)
             }
             composable(
                 route = "rocket_detail/{rocketId}",
