@@ -2,6 +2,7 @@ package com.severianfw.rocketapp.data.remote
 
 import retrofit2.http.GET
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface RocketApiService {
     companion object {
@@ -13,4 +14,11 @@ interface RocketApiService {
 
     @GET("config/launcher/{id}/")
     suspend fun getRocketDetail(@Path("id") id: Int): RocketDetailResponse
+
+    @GET("launch/upcoming/")
+    suspend fun getUpcomingLaunches(
+        @Query("search") search: String = "SpaceX",
+        @Query("limit") limit: Int = 5,
+        @Query("mode") mode: String = "detailed"
+    ): RocketLaunchesResponse
 }
